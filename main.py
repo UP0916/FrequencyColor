@@ -5,6 +5,7 @@ import itertools
 import numpy as np
 from src import GUI
 from PIL import Image
+import matplotlib.pyplot as plt
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMessageBox, QHeaderView
 
@@ -25,6 +26,7 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
         self.character = f"{string.digits}, "
         self.pushButton.clicked.connect(self.show_info)
         self.pushButton_2.clicked.connect(self.save_img)
+        self.pushButton_3.clicked.connect(self.show_img)
 
     def get_text(self):
         if (text := self.plainTextEdit.toPlainText()) == "":
@@ -85,7 +87,7 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
                 self.tableWidget.setItem(x, y, item)
         self.tableWidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents) # 第2列自适应列宽
 
-    def save_img(self):
+    def get_colors(self):
         if (table_info := self.get_frequency()) is not None and (text := self.get_text()) is not None:
             lis = text.split(",")
             if " " in lis:
@@ -93,10 +95,33 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
             elif "" in lis:
                 lis.remove("")
             all_i = [int(i.strip()) for i in lis]
-            colors = [table_info[i - 1][1] for i in all_i]
+            return [table_info[i - 1][1] for i in all_i]
 
-            self.workThread = WorkThread(colors, choice=self.get_radioButtonState())
-            # self.workThread.end.connect(lambda x: self.pushButton_2.setEnabled(x))
+    def plt_show(self, img, choice):
+        plt.xticks([]), plt.yticks([])
+        plt.imshow(img)
+        plt.show()
+        self.pushButton_3.setEnabled(True)
+
+    def show_img(self):
+        if (colors := self.get_colors()):
+            self.pushButton_3.setEnabled(False)
+            self.workThread = WorkThread(colors, self.get_radioButtonState())
+            self.workThread.end.connect(self.plt_show)
+            self.workThread.start()
+
+    def plt_save(self, new_img: Image.Image, choice):
+        if choice == 1:
+            new_img.save(os.path.join(ui.base_dir, f"RGB_{ui.file_name}"))
+        elif choice == 2:
+            new_img.save(os.path.join(ui.base_dir, f"BLACK_{ui.file_name}"))
+        self.pushButton_2.setEnabled(True)
+
+    def save_img(self):
+        if (colors := self.get_colors()):
+            self.pushButton_2.setEnabled(False)
+            self.workThread = WorkThread(colors, self.get_radioButtonState())
+            self.workThread.end.connect(self.plt_save)
             self.workThread.start()
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent) -> None:
@@ -118,33 +143,25 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
             QMessageBox.critical(self, "温馨提示", "文件不存在!", QMessageBox.Yes)
 
 class WorkThread(QtCore.QThread):
-    # end = QtCore.pyqtSignal(np.ndarray)
+    end = QtCore.pyqtSignal(Image.Image, int)
 
-    def __init__(self, colors, choice) -> None:
+    def __init__(self, colors, choice, write=False) -> None:
         super().__init__()
         self.colors = colors
         self.choice = choice
+        self.write = write
 
     def run(self):
-        if self.choice == 1:
-            new_img = Image.new("RGB", (ui.img.width, ui.img.height), color=(255, 255, 255))
-            for y, x in itertools.product(range(ui.img.height), range(ui.img.width)):
-                color = ui.img.getpixel((x, y))
-                if color in self.colors:
+        new_img = Image.new("RGB", (ui.img.width, ui.img.height), color=(255, 255, 255))
+        for y, x in itertools.product(range(ui.img.height), range(ui.img.width)):
+            color = ui.img.getpixel((x, y))
+            if color in self.colors:
+                if self.choice == 1:
                     new_img.putpixel((x, y), color)
-            new_img.save(os.path.join(ui.base_dir, f"RGB_{ui.file_name}"))
-        elif self.choice == 2:
-            new_img = Image.new("RGB", (ui.img.width, ui.img.height), color=(255, 255, 255))
-            for y, x in itertools.product(range(ui.img.height), range(ui.img.width)):
-                color = ui.img.getpixel((x, y))
-                if color in self.colors:
+                elif self.choice == 2:
                     new_img.putpixel((x, y), (0, 0, 0))
-            new_img.save(os.path.join(ui.base_dir, f"BLACK_{ui.file_name}"))
-            # self.end.emit(True)
-        im = np.array(new_img, dtype=np.uint8)
-        im = QtGui.QImage(im.data, im.shape[1], im.shape[0], im.shape[1]*3, QtGui.QImage.Format_RGB888)
-        pix = QtGui.QPixmap(im)
-        ui.label_2.setPixmap(pix.scaled(ui.label_2.width(), ui.label_2.height()))
+        
+        self.end.emit(new_img, self.choice)
 
 if __name__ == "__main__":
     # QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling) # DPI自适应
