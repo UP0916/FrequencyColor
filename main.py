@@ -37,57 +37,62 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
         else:
             QMessageBox.information(self, "温馨提示", "您输入的内容不符合标准!", QMessageBox.Yes)
 
-    def get_radioButtonState(self):
+    def get_ColorMode(self):
         if self.radioButton.isChecked():
             return 1
         elif self.radioButton_2.isChecked():
             return 2
 
+    def get_radioButtonState(self):
+        if self.radioButton_3.isChecked():
+            return 1
+        elif self.radioButton_4.isChecked():
+            return 2
+
     def get_frequency(self):
         if self.img is not None:
-            dic = {}
-            for y, x in itertools.product(range(self.img.height), range(self.img.width)):
-                color = self.img.getpixel((x, y))
-                if dic.get(color, None):
-                    dic[color] += 1
-                else:
-                    dic[color] = 1
+            unique_img, count = np.unique(self.np_img, return_counts=True, axis=0)
+            number = self.np_img.size // 3
+            table_info = [
+                [tuple(unique_img[i]), count[i], round(count[i] / number * 100, 4)] for i in range(len(unique_img))
+            ]
+            table_info.sort(key=lambda x: x[2], reverse=True)
 
-            # 从大到小排序
-            sort_info = sorted(dic.items(), key=lambda i:i[1], reverse=True) # [('e', 39915), ... ('z', 264)]
-
-            # 获取总颜色数量
-            number = sum(num for _, num in sort_info)
-
-            # 添加频率
-            table_info = []
-            for index, (character, num) in enumerate(sort_info):
-                if num != 0:
-                    frequency = round((num / number) * 100, 4)
-                    table_info.append((index + 1, character, num, frequency))
+            # 添加序号列
+            for i in range(len(table_info)):
+                table_info[i].insert(0, i + 1)
             return table_info
         else:
             QMessageBox.information(self, "温馨提示", "您没有拖入图片!", QMessageBox.Yes)
 
+    def set_item(self, x, y, item):
+        self.tableWidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents) # 第二列自适应列宽
+        self.tableWidget.setItem(x, y, item)
+
     def show_info(self):
         if (table_info := self.get_frequency()) is None:
             return
+
+        if self.get_radioButtonState() == 1:
+            table_info = table_info[:500]
+
+        self.pushButton.setEnabled(False)
         self.tableWidget.setRowCount(len(table_info))
-        for x in range(self.tableWidget.rowCount()):
-            for y in range(self.tableWidget.columnCount()):
+        for x in range(ui.tableWidget.rowCount()):
+            for y in range(ui.tableWidget.columnCount()):
                 item = QTableWidgetItem(str(table_info[x][y]))
+                item.setTextAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter) # 每列设置水平垂直居中
+
                 if y == 1:
-                    # item = QTableWidgetItem('#' + ''.join(hex(i)[2:].zfill(2) for i in table_info[x][y]))
                     im = np.zeros((100, 100, 3))
                     im += table_info[x][y]
                     im = im.astype(np.uint8)
                     im = QtGui.QImage(im.data, im.shape[1], im.shape[0], im.shape[1]*3, QtGui.QImage.Format_RGB888)
                     pix = QtGui.QPixmap(im)
                     item.setIcon(QtGui.QIcon(pix))
-                item.setTextAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter) # 每列设置水平垂直居中
-                self.tableWidget.setItem(x, y, item)
-        self.tableWidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents) # 第2列自适应列宽
-
+                self.set_item(x, y, item)
+        self.pushButton.setEnabled(True)
+    
     def get_colors(self):
         if (table_info := self.get_frequency()) is not None and (text := self.get_text()) is not None:
             lis = re.findall("\d{1,}", text)
@@ -107,7 +112,7 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
     def show_img(self):
         if (colors := self.get_colors()):
             self.pushButton_3.setEnabled(False)
-            self.workThread = WorkThread(colors, self.get_radioButtonState(), reverse=self.checkBox.checkState())
+            self.workThread = WorkThread(colors, self.get_ColorMode(), reverse=self.checkBox.checkState())
             self.workThread.end.connect(self.plt_show)
             self.workThread.start()
 
@@ -121,7 +126,7 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
     def save_img(self):
         if (colors := self.get_colors()):
             self.pushButton_2.setEnabled(False)
-            self.workThread = WorkThread(colors, self.get_radioButtonState(), reverse=self.checkBox.checkState())
+            self.workThread = WorkThread(colors, self.get_ColorMode(), reverse=self.checkBox.checkState())
             self.workThread.end.connect(self.plt_save)
             self.workThread.start()
 
@@ -139,6 +144,7 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
         super().dropEvent(e)
         if os.path.exists(self.file_path):
             self.img = Image.open(self.file_path).convert('RGB')
+            self.np_img = np.array(self.img, dtype=np.uint8).reshape(-1, 3)
             self.label.setPixmap(QtGui.QPixmap(self.file_path).scaled(self.label.width(), self.label.height()))
         else:
             QMessageBox.critical(self, "温馨提示", "文件不存在!", QMessageBox.Yes)
@@ -165,7 +171,7 @@ class WorkThread(QtCore.QThread):
         self.end.emit(new_img, self.choice, self.reverse)
 
 if __name__ == "__main__":
-    QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling) # DPI自适应
+    # QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling) # DPI自适应
     app = QApplication(sys.argv)
     ui = Main()
     ui.show()
