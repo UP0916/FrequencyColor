@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import string
 import itertools
@@ -23,7 +24,7 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
 
         # 信号
         self.img = None
-        self.character = f"{string.digits}, "
+        self.character = f"{string.digits} "
         self.pushButton.clicked.connect(self.show_info)
         self.pushButton_2.clicked.connect(self.save_img)
         self.pushButton_3.clicked.connect(self.show_img)
@@ -89,13 +90,13 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
 
     def get_colors(self):
         if (table_info := self.get_frequency()) is not None and (text := self.get_text()) is not None:
-            lis = text.split(",")
-            if " " in lis:
-                lis.remove(" ")
-            elif "" in lis:
-                lis.remove("")
-            all_i = [int(i.strip()) for i in lis]
-            return [table_info[i - 1][1] for i in all_i]
+            lis = re.findall("\d{1,}", text)
+            lis = list(set(lis)) # 去重
+            all_i = [int(i) for i in lis]
+            try:
+                return [table_info[i - 1][1] for i in all_i]
+            except IndexError:
+                QMessageBox.warning(self, "温馨提示", "颜色序号输入有误, 请检查是否输入了不存的序号!", QMessageBox.Yes)
 
     def plt_show(self, img, choice):
         plt.xticks([]), plt.yticks([])
@@ -106,7 +107,7 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
     def show_img(self):
         if (colors := self.get_colors()):
             self.pushButton_3.setEnabled(False)
-            self.workThread = WorkThread(colors, self.get_radioButtonState())
+            self.workThread = WorkThread(colors, self.get_radioButtonState(), reverse=self.checkBox.checkState())
             self.workThread.end.connect(self.plt_show)
             self.workThread.start()
 
@@ -145,22 +146,23 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
 class WorkThread(QtCore.QThread):
     end = QtCore.pyqtSignal(Image.Image, int)
 
-    def __init__(self, colors, choice, write=False) -> None:
+    def __init__(self, colors, choice, reverse=False) -> None:
         super().__init__()
         self.colors = colors
         self.choice = choice
-        self.write = write
+        self.reverse = reverse
 
     def run(self):
         new_img = Image.new("RGB", (ui.img.width, ui.img.height), color=(255, 255, 255))
         for y, x in itertools.product(range(ui.img.height), range(ui.img.width)):
             color = ui.img.getpixel((x, y))
-            if color in self.colors:
-                if self.choice == 1:
-                    new_img.putpixel((x, y), color)
-                elif self.choice == 2:
-                    new_img.putpixel((x, y), (0, 0, 0))
-        
+            if (self.reverse and color not in self.colors and self.choice == 1
+                or not self.reverse and color in self.colors and self.choice == 1):
+                new_img.putpixel((x, y), color)
+            elif (
+                self.reverse and color not in self.colors and self.choice == 2
+                or not self.reverse and color in self.colors and self.choice == 2):
+                new_img.putpixel((x, y), (0, 0, 0))
         self.end.emit(new_img, self.choice)
 
 if __name__ == "__main__":
