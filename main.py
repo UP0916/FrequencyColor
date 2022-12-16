@@ -98,7 +98,7 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
             except IndexError:
                 QMessageBox.warning(self, "温馨提示", "颜色序号输入有误, 请检查是否输入了不存的序号!", QMessageBox.Yes)
 
-    def plt_show(self, img, choice):
+    def plt_show(self, img, *args):
         plt.xticks([]), plt.yticks([])
         plt.imshow(img)
         plt.show()
@@ -111,17 +111,17 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
             self.workThread.end.connect(self.plt_show)
             self.workThread.start()
 
-    def plt_save(self, new_img: Image.Image, choice):
+    def plt_save(self, new_img: Image.Image, choice, reverse):
         if choice == 1:
-            new_img.save(os.path.join(ui.base_dir, f"RGB_{ui.file_name}"))
+            new_img.save(os.path.join(ui.base_dir, f"RGB_REVERSE_{ui.file_name}")) if reverse else new_img.save(os.path.join(ui.base_dir, f"RGB_{ui.file_name}"))
         elif choice == 2:
-            new_img.save(os.path.join(ui.base_dir, f"BLACK_{ui.file_name}"))
+            new_img.save(os.path.join(ui.base_dir, f"BLACK_REVERSE_{ui.file_name}")) if reverse else new_img.save(os.path.join(ui.base_dir, f"BLACK_{ui.file_name}"))
         self.pushButton_2.setEnabled(True)
 
     def save_img(self):
         if (colors := self.get_colors()):
             self.pushButton_2.setEnabled(False)
-            self.workThread = WorkThread(colors, self.get_radioButtonState())
+            self.workThread = WorkThread(colors, self.get_radioButtonState(), reverse=self.checkBox.checkState())
             self.workThread.end.connect(self.plt_save)
             self.workThread.start()
 
@@ -144,9 +144,9 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
             QMessageBox.critical(self, "温馨提示", "文件不存在!", QMessageBox.Yes)
 
 class WorkThread(QtCore.QThread):
-    end = QtCore.pyqtSignal(Image.Image, int)
+    end = QtCore.pyqtSignal(Image.Image, int, bool)
 
-    def __init__(self, colors, choice, reverse=False) -> None:
+    def __init__(self, colors, choice, reverse) -> None:
         super().__init__()
         self.colors = colors
         self.choice = choice
@@ -159,14 +159,13 @@ class WorkThread(QtCore.QThread):
             if (self.reverse and color not in self.colors and self.choice == 1
                 or not self.reverse and color in self.colors and self.choice == 1):
                 new_img.putpixel((x, y), color)
-            elif (
-                self.reverse and color not in self.colors and self.choice == 2
+            elif (self.reverse and color not in self.colors and self.choice == 2
                 or not self.reverse and color in self.colors and self.choice == 2):
                 new_img.putpixel((x, y), (0, 0, 0))
-        self.end.emit(new_img, self.choice)
+        self.end.emit(new_img, self.choice, self.reverse)
 
 if __name__ == "__main__":
-    # QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling) # DPI自适应
+    QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling) # DPI自适应
     app = QApplication(sys.argv)
     ui = Main()
     ui.show()
