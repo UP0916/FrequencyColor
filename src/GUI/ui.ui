@@ -25,7 +25,7 @@
    <enum>Qt::DefaultContextMenu</enum>
   </property>
   <property name="windowTitle">
-   <string>图片颜色统计工具v1.0.1   作者:Byxs20</string>
+   <string>图片颜色统计工具v1.0.2   作者:Byxs20</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QWidget" name="layoutWidget">
@@ -65,7 +65,7 @@
        <item>
         <widget class="QPlainTextEdit" name="plainTextEdit">
          <property name="placeholderText">
-          <string>填入您需要提取的序号(如:1,2,3,...,n)</string>
+          <string>填入您需要提取的序号(如:1 2 3 . . . n)</string>
          </property>
         </widget>
        </item>
@@ -85,6 +85,13 @@
           <widget class="QRadioButton" name="radioButton_2">
            <property name="text">
             <string>黑色</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox">
+           <property name="text">
+            <string>取反</string>
            </property>
           </widget>
          </item>

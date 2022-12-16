@@ -60,6 +60,9 @@ class Ui_MainWindow(object):
         self.radioButton_2 = QtWidgets.QRadioButton(self.layoutWidget)
         self.radioButton_2.setObjectName("radioButton_2")
         self.horizontalLayout_3.addWidget(self.radioButton_2)
+        self.checkBox = QtWidgets.QCheckBox(self.layoutWidget)
+        self.checkBox.setObjectName("checkBox")
+        self.horizontalLayout_3.addWidget(self.checkBox)
         self.verticalLayout.addLayout(self.horizontalLayout_3)
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
@@ -121,11 +124,12 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "图片颜色统计工具v1.0.1   作者:Byxs20"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "图片颜色统计工具v1.0.2   作者:Byxs20"))
         self.groupBox.setTitle(_translate("MainWindow", "输入图片"))
-        self.plainTextEdit.setPlaceholderText(_translate("MainWindow", "填入您需要提取的序号(如:1,2,3,...,n)"))
+        self.plainTextEdit.setPlaceholderText(_translate("MainWindow", "填入您需要提取的序号(如:1 2 3 . . . n)"))
         self.radioButton.setText(_translate("MainWindow", "默认"))
         self.radioButton_2.setText(_translate("MainWindow", "黑色"))
+        self.checkBox.setText(_translate("MainWindow", "取反"))
         self.pushButton.setText(_translate("MainWindow", "颜色统计"))
         self.pushButton_3.setText(_translate("MainWindow", "查看图片"))
         self.pushButton_2.setText(_translate("MainWindow", "保存图片"))
