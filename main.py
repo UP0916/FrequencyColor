@@ -51,8 +51,9 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
 
     def get_frequency(self):
         if self.img is not None:
-            unique_img, count = np.unique(self.np_img, return_counts=True, axis=0)
-            number = self.np_img.size // 3
+            img_2d = self.np_img.reshape(-1, 3)
+            unique_img, count = np.unique(img_2d, return_counts=True, axis=0)
+            number = img_2d.size // 3
             table_info = [
                 [tuple(unique_img[i]), count[i], round(count[i] / number * 100, 4)] for i in range(len(unique_img))
             ]
@@ -74,7 +75,7 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
             return
 
         if self.get_radioButtonState() == 1:
-            table_info = table_info[:500]
+            table_info = table_info[:200]
 
         self.pushButton.setEnabled(False)
         self.tableWidget.setRowCount(len(table_info))
@@ -116,7 +117,8 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
             self.workThread.end.connect(self.plt_show)
             self.workThread.start()
 
-    def plt_save(self, new_img: Image.Image, choice, reverse):
+    def plt_save(self, new_img: np.ndarray, choice, reverse):
+        new_img = Image.fromarray(new_img)
         if choice == 1:
             new_img.save(os.path.join(ui.base_dir, f"RGB_REVERSE_{ui.file_name}")) if reverse else new_img.save(os.path.join(ui.base_dir, f"RGB_{ui.file_name}"))
         elif choice == 2:
@@ -144,13 +146,13 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
         super().dropEvent(e)
         if os.path.exists(self.file_path):
             self.img = Image.open(self.file_path).convert('RGB')
-            self.np_img = np.array(self.img, dtype=np.uint8).reshape(-1, 3)
+            self.np_img = np.array(self.img, dtype=np.uint8)
             self.label.setPixmap(QtGui.QPixmap(self.file_path).scaled(self.label.width(), self.label.height()))
         else:
             QMessageBox.critical(self, "温馨提示", "文件不存在!", QMessageBox.Yes)
 
 class WorkThread(QtCore.QThread):
-    end = QtCore.pyqtSignal(Image.Image, int, bool)
+    end = QtCore.pyqtSignal(np.ndarray, int, bool)
 
     def __init__(self, colors, choice, reverse) -> None:
         super().__init__()
@@ -158,20 +160,34 @@ class WorkThread(QtCore.QThread):
         self.choice = choice
         self.reverse = reverse
 
+    def get_bool_index(self, img, colors):
+        index = None
+        for color in colors:
+            if index is None:
+                index = (img[:, :, 0] == color[0]) & (img[:, :, 1] == color[1]) & (img[:, :, 2] == color[2])
+            else:
+                index |= (img[:, :, 0] == color[0]) & (img[:, :, 1] == color[1]) & (img[:, :, 2] == color[2])
+        return index
+
     def run(self):
-        new_img = Image.new("RGB", (ui.img.width, ui.img.height), color=(255, 255, 255))
-        for y, x in itertools.product(range(ui.img.height), range(ui.img.width)):
-            color = ui.img.getpixel((x, y))
-            if (self.reverse and color not in self.colors and self.choice == 1
-                or not self.reverse and color in self.colors and self.choice == 1):
-                new_img.putpixel((x, y), color)
-            elif (self.reverse and color not in self.colors and self.choice == 2
-                or not self.reverse and color in self.colors and self.choice == 2):
-                new_img.putpixel((x, y), (0, 0, 0))
+        new_img = ui.np_img.copy()
+        index = self.get_bool_index(new_img, self.colors)
+        if self.choice == 1:
+            if not self.reverse:
+                new_img[~index] = (255, 255, 255)
+            else:
+                new_img[index] = (255, 255, 255)
+        elif self.choice == 2:
+            if not self.reverse:
+                new_img[index] = (0, 0, 0)
+                new_img[~index] = (255, 255, 255)
+            else:
+                new_img[index] = (255, 255, 255)
+                new_img[~index] = (0, 0, 0)
         self.end.emit(new_img, self.choice, self.reverse)
 
 if __name__ == "__main__":
-    # QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling) # DPI自适应
+    QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling) # DPI自适应
     app = QApplication(sys.argv)
     ui = Main()
     ui.show()

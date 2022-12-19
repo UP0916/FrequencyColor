@@ -150,7 +150,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "图片颜色统计工具v1.0.3   作者:Byxs20"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "图片颜色统计工具v1.0.4   作者:Byxs20"))
         self.groupBox.setTitle(_translate("MainWindow", "输入图片"))
         self.groupBox_3.setTitle(_translate("MainWindow", "统计设置"))
         self.radioButton_3.setText(_translate("MainWindow", "默认"))

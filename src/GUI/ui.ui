@@ -25,7 +25,7 @@
    <enum>Qt::DefaultContextMenu</enum>
   </property>
   <property name="windowTitle">
-   <string>图片颜色统计工具v1.0.3   作者:Byxs20</string>
+   <string>图片颜色统计工具v1.0.4   作者:Byxs20</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QWidget" name="layoutWidget">
