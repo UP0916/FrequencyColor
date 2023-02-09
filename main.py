@@ -2,13 +2,12 @@ import os
 import re
 import sys
 import string
-import itertools
 import numpy as np
 from src import GUI
 from PIL import Image
 import matplotlib.pyplot as plt
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMessageBox, QHeaderView
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMessageBox, QHeaderView, QFileDialog
 
 
 class Main(QMainWindow, GUI.Ui_MainWindow):
@@ -28,6 +27,7 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
         self.pushButton.clicked.connect(self.show_info)
         self.pushButton_2.clicked.connect(self.save_img)
         self.pushButton_3.clicked.connect(self.show_img)
+        self.pushButton_4.clicked.connect(self.open_img)
 
     def get_text(self):
         if (text := self.plainTextEdit.toPlainText()) == "":
@@ -66,13 +66,18 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
         else:
             QMessageBox.information(self, "温馨提示", "您没有拖入图片!", QMessageBox.Yes)
 
+    def open_img(self):
+        filename = QFileDialog.getOpenFileNames(self, '选择图像', os.getcwd(), "Image Files(*.png;*.jpg;*.jpeg;*.bmp;*.webp;*.tif';*.gif);;All Files(*)")
+        if filename[0] != []:
+            self.read_img(filename[0][0])
+
     def set_item(self, x, y, item):
         self.tableWidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents) # 第二列自适应列宽
         self.tableWidget.setItem(x, y, item)
 
     def show_info(self):
         if (table_info := self.get_frequency()) is None:
-            return
+            self.dropEvent()
 
         if self.get_radioButtonState() == 1:
             table_info = table_info[:200]
@@ -132,6 +137,14 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
             self.workThread.end.connect(self.plt_save)
             self.workThread.start()
 
+    def read_img(self, file_path):
+        if os.path.exists(file_path):
+            self.img = Image.open(file_path).convert('RGB')
+            self.np_img = np.array(self.img, dtype=np.uint8)
+            self.label.setPixmap(QtGui.QPixmap(file_path).scaled(self.label.width(), self.label.height()))
+        else:
+            QMessageBox.critical(self, "温馨提示", "文件不存在!", QMessageBox.Yes)
+
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent) -> None:
         super().dragEnterEvent(e)
         self.file_path = e.mimeData().text().replace('file:///', '')
@@ -144,12 +157,7 @@ class Main(QMainWindow, GUI.Ui_MainWindow):
 
     def dropEvent(self, e: QtGui.QDropEvent) -> None:
         super().dropEvent(e)
-        if os.path.exists(self.file_path):
-            self.img = Image.open(self.file_path).convert('RGB')
-            self.np_img = np.array(self.img, dtype=np.uint8)
-            self.label.setPixmap(QtGui.QPixmap(self.file_path).scaled(self.label.width(), self.label.height()))
-        else:
-            QMessageBox.critical(self, "温馨提示", "文件不存在!", QMessageBox.Yes)
+        self.read_img(self.file_path)
 
 class WorkThread(QtCore.QThread):
     end = QtCore.pyqtSignal(np.ndarray, int, bool)
