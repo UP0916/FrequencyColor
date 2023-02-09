@@ -90,6 +90,14 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.plainTextEdit)
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.pushButton_4 = QtWidgets.QPushButton(self.layoutWidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButton_4.sizePolicy().hasHeightForWidth())
+        self.pushButton_4.setSizePolicy(sizePolicy)
+        self.pushButton_4.setObjectName("pushButton_4")
+        self.horizontalLayout_2.addWidget(self.pushButton_4)
         self.pushButton = QtWidgets.QPushButton(self.layoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -150,7 +158,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "图片颜色统计工具v1.0.4   作者:Byxs20"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "图片颜色统计工具v1.0.5   作者:Byxs20"))
         self.groupBox.setTitle(_translate("MainWindow", "输入图片"))
         self.groupBox_3.setTitle(_translate("MainWindow", "统计设置"))
         self.radioButton_3.setText(_translate("MainWindow", "默认"))
@@ -160,6 +168,7 @@ class Ui_MainWindow(object):
         self.radioButton_2.setText(_translate("MainWindow", "黑色"))
         self.checkBox.setText(_translate("MainWindow", "取反"))
         self.plainTextEdit.setPlaceholderText(_translate("MainWindow", "填入您需要提取的序号(如:1 2 3 . . . n)"))
+        self.pushButton_4.setText(_translate("MainWindow", "打开图片"))
         self.pushButton.setText(_translate("MainWindow", "颜色统计"))
         self.pushButton_3.setText(_translate("MainWindow", "查看图片"))
         self.pushButton_2.setText(_translate("MainWindow", "保存图片"))
